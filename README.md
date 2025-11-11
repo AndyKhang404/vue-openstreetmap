@@ -2,7 +2,9 @@
 
 A website that allows the users to input a location, then get (up to) 5 nearest points of interest and display them on the map
 
-This template should help get you started developing with Vue 3 in Vite.
+Built with [Vue 3](https://vuejs.org/), [vue-leaflet](https://github.com/vue-leaflet/vue-leaflet), [OpenStreetMap API](https://wiki.openstreetmap.org/wiki/API) and [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API)
+
+You can view the demo [here](https://vue-openstreetmap.pages.dev/)
 
 ## Recommended IDE Setup
 
