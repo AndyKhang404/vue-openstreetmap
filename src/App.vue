@@ -177,6 +177,12 @@ const searchPOIs = async (latitude, longitude) => {
 </script>
 
 <style scoped>
+:root {
+  font-size: 16px;
+}
+form > * {
+  font-size: 1rem;
+}
 .map {
   padding-top: 10px;
 }
