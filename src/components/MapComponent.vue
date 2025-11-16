@@ -1,6 +1,13 @@
 <template>
-  <div class="map-container" style="height: 600px; width: 100%">
-    <l-map ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false">
+  <div class="map-container">
+    <!-- emit 'select' with { lat, lon } when user clicks the map -->
+    <l-map
+      ref="map"
+      v-model:zoom="zoom"
+      :center="center"
+      :use-global-leaflet="false"
+      @click="onMapClick"
+    >
       <l-tile-layer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         layer-type="base"
@@ -69,6 +76,17 @@ const props = defineProps({
   },
 })
 
+// emit 'select-location' when map is clicked
+const emit = defineEmits(['select-location'])
+const onMapClick = (evt) => {
+  const lat = evt?.latlng?.lat
+  const lon = evt?.latlng?.lng
+  if (lat != null && lon != null) {
+    center.value = [lat, lon]
+    emit('select-location', { lat, lon })
+  }
+}
+
 // Map State (Reactive data)
 // Default center set to (10.7755254,106.7021047)
 const zoom = ref(13)
@@ -105,8 +123,6 @@ watch(
       const first = newList[0]
       if (Number.isFinite(first.lat) && Number.isFinite(first.lon)) {
         center.value = [first.lat, first.lon]
-        // optionally adjust zoom
-        zoom.value = 14
       }
     }
   },

@@ -1,0 +1,131 @@
+:root {
+  font-size: 16px;
+  --color-pigeon-post-50: #f3f7fa;
+  --color-pigeon-post-100: #e9eff6;
+  --color-pigeon-post-200: #d8e1ed;
+  --color-pigeon-post-300: #c0cde1;
+  --color-pigeon-post-400: #aab9d6;
+  --color-pigeon-post-500: #8e9dc6;
+  --color-pigeon-post-600: #7682b5;
+  --color-pigeon-post-700: #656f9d;
+  --color-pigeon-post-800: #535b80;
+  --color-pigeon-post-900: #474e68;
+  --color-pigeon-post-950: #2a2d3c;
+}
+@media screen and (max-width: 600px), screen and (max-height: 600px) {
+  :root {
+    font-size: 12px;
+  }
+}
+
+:root,
+html,
+body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+h3 {
+  margin: 0.5rem 0;
+}
+
+form > * {
+  font-size: 1rem;
+}
+
+#app {
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+}
+
+#content {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  width: 24rem;
+}
+
+#content > header {
+  padding: 0.5rem;
+  background-color: var(--color-pigeon-post-900);
+  color: var(--color-pigeon-post-100);
+}
+
+#location,
+#poi {
+  margin: 0 0.5rem 0.5rem;
+  box-sizing: border-box;
+  width: calc(100% - 1rem); /* account for left+right margins */
+  max-width: 100%;
+}
+#location > h2 {
+  background-color: #ffcccc;
+  margin: 0.75rem 0;
+  padding-left: 0.5rem;
+}
+#poi > h2 {
+  background-color: #ccccff;
+  margin: 0.25rem 0 0.75rem;
+  padding-left: 0.5rem;
+}
+
+#poi > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+#map {
+  flex: 1;
+}
+
+.clamp-row {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+
+@media screen and (orientation: portrait) {
+  #app {
+    box-sizing: border-box;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #content {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  #poi > div {
+    display: flex;
+    flex-direction: horizontal;
+    overflow-x: scroll;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .poi-items {
+    min-width: 220px;
+  }
+
+  .clamp-row {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 2; /* Set to 2 lines */
+    line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+  }
+}
