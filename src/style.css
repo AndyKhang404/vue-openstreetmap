@@ -8,9 +8,18 @@
   --color-pigeon-post-500: #8e9dc6;
   --color-pigeon-post-600: #7682b5;
   --color-pigeon-post-700: #656f9d;
-  --color-pigeon-post-800: #535b80;
+  --color-pigeon-post-800: #4c5372;
   --color-pigeon-post-900: #474e68;
   --color-pigeon-post-950: #2a2d3c;
+
+  --primary: var(--color-pigeon-post-700);
+  --primary-alt: var(--color-pigeon-post-900);
+  --background: var(--color-pigeon-post-50);
+  --border: var(--color-pigeon-post-200);
+
+  --on-primary: white;
+  --on-primary-alt: white;
+  --on-background: black;
 }
 @media screen and (max-width: 600px), screen and (max-height: 600px) {
   :root {
@@ -39,7 +48,7 @@ form > * {
   font-size: 1.5rem;
   padding-right: 0.75rem;
   padding-left: 0.25rem;
-  border-right: 1px solid #e1e4e8;
+  border-right: 1px solid var(--border);
 }
 
 #app {
@@ -59,8 +68,8 @@ form > * {
 
 #content > header {
   padding: 0.5rem;
-  background-color: var(--color-pigeon-post-900);
-  color: var(--color-pigeon-post-100);
+  background-color: var(--primary);
+  color: var(--on-primary);
 }
 
 #search-box {
@@ -73,21 +82,20 @@ form > * {
 #search-input {
   flex: 1;
   padding: 8px 10px;
-  border: 1px solid var(--color-pigeon-post-50);
-  background: var(--color-pigeon-post-50);
+  border: 1px solid var(--border);
+  background: var(--background);
 }
 
 #search-box > button {
   padding: 8px 12px;
-  border: 1px solid var(--color-pigeon-post-600);
-  background: var(--color-pigeon-post-600);
-  color: white;
+  border: 1px solid var(--border);
+  background: var(--primary);
+  color: var(--on-primary);
   cursor: pointer;
 }
 
-#search-box > button:hover {
-  border: 1px solid var(--color-pigeon-post-700);
-  background: var(--color-pigeon-post-700);
+.button-shadow:hover {
+  box-shadow: 0px 0px 10px 0px #000000;
 }
 
 #location,
@@ -126,6 +134,32 @@ form > * {
   line-clamp: 4;
   display: -webkit-box;
   -webkit-box-orient: vertical;
+}
+
+#translator-toggle {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 1000;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.icon-primary {
+  fill: var(--on-primary);
+}
+
+.popup-header {
+  background: var(--primary);
+}
+
+.popup-title,
+.popup-close-button {
+  color: var(--on-primary);
 }
 
 @media screen and (orientation: portrait) {

@@ -29,6 +29,8 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 npm install
 ```
 
+Remember to set your env vars (see the .env file for details)
+
 ### Compile and Hot-Reload for Development
 
 ```sh
@@ -46,3 +48,15 @@ npm run build
 ```sh
 npm run lint
 ```
+
+## Other acknowledgements
+
+### Icons
+
+- [weather-icons](https://erikflowers.github.io/weather-icons/)
+- [iconmonstr](https://iconmonstr.com/)
+
+### Others
+
+- [CSS box-shadow](https://html-css-js.com/css/generator/box-shadow/)
+- [Tailwind CSS color generator](https://uicolors.app/generate/aab9d6)

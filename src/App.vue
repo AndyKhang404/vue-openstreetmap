@@ -1,7 +1,7 @@
 <template>
   <div id="content">
     <header>
-      <h1 style="font-size: 1.75rem">vue-openstreetmap</h1>
+      <h1 style="font-size: 1.75rem">Vue OSM viewer</h1>
       <p v-if="foundLocations.length === 0 && !isSearching">Click on the map or search here</p>
       <form id="search-box" @submit.prevent="onSearch">
         <input
@@ -11,8 +11,18 @@
           placeholder="Search address or place"
           aria-label="Search address"
         />
-        <button type="submit" :disabled="isSearching">
-          {{ isSearching ? 'Searching...' : 'Search' }}
+        <button class="button-shadow" type="submit" :disabled="isSearching">
+          <svg
+            class="icon-primary"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M23.822 20.88l-6.353-6.354c.93-1.465 1.467-3.2 1.467-5.059.001-5.219-4.247-9.467-9.468-9.467s-9.468 4.248-9.468 9.468c0 5.221 4.247 9.469 9.468 9.469 1.768 0 3.421-.487 4.839-1.333l6.396 6.396 3.119-3.12zm-20.294-11.412c0-3.273 2.665-5.938 5.939-5.938 3.275 0 5.94 2.664 5.94 5.938 0 3.275-2.665 5.939-5.94 5.939-3.274 0-5.939-2.664-5.939-5.939z"
+            />
+          </svg>
         </button>
       </form>
     </header>
@@ -82,12 +92,38 @@
     :pois="foundPOIs"
     @select-location="onMapSelect"
   />
+
+  <PopupComponent v-model:visible="translatorPopupVisible" title="Translator">
+    <TranslatorComponent />
+  </PopupComponent>
+
+  <button
+    id="translator-toggle"
+    class="button-shadow"
+    @click="translatorPopupVisible = true"
+    title="Open translator"
+    aria-label="Open translator"
+  >
+    <svg
+      class="icon-primary"
+      xmlns="http://www.w3.org/2000/svg"
+      width="2rem"
+      height="2rem"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M8.722 5.843l.125-.562-1.02-.199-.101.464c-.345-.05-.712-.057-1.083-.019.009-.249.023-.494.045-.728h1.141v-.966h-1.004c.049-.246.092-.394.134-.533l-.997-.3c-.072.245-.134.484-.195.833h-1.138v.966h1.014c-.027.312-.043.637-.048.964-1.119.411-1.595 1.195-1.595 1.905 0 .84.663 1.578 1.709 1.482 1.301-.118 2.169-1.1 2.679-2.308.525.303.746.814.548 1.286-.185.436-.725.852-1.757.831v1.041c1.146.018 2.272-.417 2.715-1.469.431-1.028-.062-2.151-1.172-2.688zm-1.342.71c-.162.36-.375.717-.648.998-.041-.3-.07-.628-.086-.978.249-.032.499-.038.734-.02zm-1.758.336c.028.44.078.844.148 1.205-.927.169-.963-.744-.148-1.205zm2.378 6.111c0-.342.035-.677.102-1h-5.102c-.552 0-1-.449-1-1v-8c0-.551.448-1 1-1h8c.552 0 1 .449 1 1v5.101c.323-.066.657-.101 1-.101h1v-5c0-1.657-1.343-3-3-3h-8c-1.656 0-3 1.343-3 3v8c0 1.657 1.344 3 3 3h5v-1zm13-3h-8c-1.657 0-3 1.343-3 3v8c0 1.657 1.343 3 3 3h8c1.657 0 3-1.343 3-3v-8c0-1.657-1.343-3-3-3zm-1.865 11l-.66-1.846h-3l-.663 1.846h-1.66l3.041-8h1.602l3.053 8h-1.713zm-2.153-6.137l1.051 3.018h-2.103l1.052-3.018z"
+      />
+    </svg>
+  </button>
 </template>
 
 <script setup>
 import LoaderComponent from './components/LoaderComponent.vue'
 import MapComponent from './components/MapComponent.vue'
 import WeatherIcon from './components/WeatherIcon.vue'
+import PopupComponent from './components/PopupComponent.vue'
+import TranslatorComponent from './components/TranslatorComponent.vue'
 import { ref } from 'vue'
 
 const userAgent = 'vue-openstreetmap/1.0 (Contact: andykhang404@gmail.com)'
@@ -96,6 +132,8 @@ const isSearching = ref(false)
 const foundLocations = ref([])
 const foundPOIs = ref([])
 const weather = ref({ id: 0, night: false, description: '' })
+
+const translatorPopupVisible = ref(false)
 
 // search input model
 const searchQuery = ref('')
