@@ -53,6 +53,7 @@
             :icon_id="weather.id"
             :night="weather.night"
             :description="weather.description"
+            :temp="weather.temp"
           />
           <h3 class="clamp-row" style="padding-left: 1rem">
             {{ foundLocation.display_name || foundLocation.name || 'Selected location' }}
@@ -131,7 +132,7 @@ const userAgent = 'vue-openstreetmap/1.0 (Contact: andykhang404@gmail.com)'
 const isSearching = ref(false)
 const foundLocations = ref([])
 const foundPOIs = ref([])
-const weather = ref({ id: 0, night: false, description: '' })
+const weather = ref({ id: 0, night: false, description: '', temp: null })
 
 const translatorPopupVisible = ref(false)
 
@@ -201,6 +202,7 @@ const fetchWeather = async (lat, lon) => {
       id: w.id || 0,
       night: !isDay,
       description: w.description || '',
+      temp: typeof data.main?.temp === 'number' ? data.main.temp : null,
     }
   } catch (err) {
     console.error('fetchWeather failed', err)
@@ -214,7 +216,8 @@ const onSearch = async () => {
   if (!q) return
 
   isSearching.value = true
-  weather.value.id = 0
+  // reset weather including temp
+  weather.value = { id: 0, night: false, description: '', temp: null }
   foundLocations.value = []
   foundPOIs.value = []
 
@@ -269,7 +272,8 @@ const onSearch = async () => {
 const onMapSelect = async ({ lat, lon }) => {
   if (isSearching.value) return
   isSearching.value = true
-  weather.value.id = 0
+  // reset weather including temp
+  weather.value = { id: 0, night: false, description: '', temp: null }
   foundPOIs.value = []
   // temporary selected location
   foundLocations.value = [{ lat, lon, display_name: 'Selected location' }]

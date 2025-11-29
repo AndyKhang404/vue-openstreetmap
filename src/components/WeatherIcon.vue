@@ -1,7 +1,18 @@
 <template>
-  <abbr :title="props.description">
-    <i :class="'wi ' + icon"></i>
-  </abbr>
+  <div
+    style="
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-right: 1px solid var(--border);
+      padding-right: 0.75rem;
+    "
+  >
+    <abbr :title="props.description">
+      <i :class="'wi ' + icon"></i>
+    </abbr>
+    <div v-if="hasTemp" class="weather-temp" aria-hidden="false">{{ formattedTemp }}</div>
+  </div>
 </template>
 
 <script setup>
@@ -17,6 +28,10 @@ const props = defineProps({
   description: {
     type: String,
     default: () => 'No description',
+  },
+  temp: {
+    type: Number,
+    default: () => null,
   },
 })
 
@@ -89,4 +104,21 @@ const icon = computed(() => {
 
   return code
 })
+
+const hasTemp = computed(
+  () => props.temp !== null && props.temp !== undefined && !Number.isNaN(props.temp),
+)
+const formattedTemp = computed(() => {
+  if (!hasTemp.value) return ''
+  // Round to nearest integer and show Celsius symbol
+  return `${Math.round(props.temp)}°C`
+})
 </script>
+
+<style scoped>
+.weather-temp {
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+  color: #333;
+}
+</style>
