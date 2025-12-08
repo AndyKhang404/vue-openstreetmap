@@ -56,8 +56,14 @@
             :temp="weather.temp"
           />
           <h3 class="clamp-row" style="padding-left: 1rem">
-            {{ foundLocation.display_name || foundLocation.name || 'Selected location' }}
+            {{ foundLocation.display_name || 'Selected location' }}
           </h3>
+          <BookmarkButton
+            :lat="foundLocation.lat"
+            :lon="foundLocation.lon"
+            :type="'place'"
+            :name="foundLocation.display_name"
+          />
         </div>
       </div>
     </section>
@@ -74,13 +80,24 @@
             border: 1px solid #e1e4e8;
             padding: 0.5rem 1rem;
             border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
           "
           v-for="foundPOI in foundPOIs"
           :key="foundPOI.id"
         >
-          <h3>{{ foundPOI.name }}</h3>
-          <span>type: {{ foundPOI.type }}</span
-          ><br />
+          <div>
+            <h3>{{ foundPOI.name }}</h3>
+            <span>type: {{ foundPOI.type }}</span
+            ><br />
+          </div>
+          <BookmarkButton
+            :lat="foundPOI.lat"
+            :lon="foundPOI.lon"
+            :type="foundPOI.type"
+            :name="foundPOI.name"
+          />
         </div>
       </div>
     </section>
@@ -117,17 +134,41 @@
       />
     </svg>
   </button>
+
+  <button
+    id="login-toggle"
+    class="button-shadow"
+    @click="loginPopupVisible = true"
+    title="Account"
+    aria-label="Open account popup"
+  >
+    <svg
+      class="icon-primary"
+      xmlns="http://www.w3.org/2000/svg"
+      width="2rem"
+      height="2rem"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.9V22h19.2v-2.7c0-3.3-6.4-4.9-9.6-4.9z"
+      />
+    </svg>
+  </button>
+
+  <PopupComponent v-model:visible="loginPopupVisible" title="Account">
+    <AccountComponent @success="loginPopupVisible = false" />
+  </PopupComponent>
 </template>
 
 <script setup>
-import LoaderComponent from './components/LoaderComponent.vue'
-import MapComponent from './components/MapComponent.vue'
-import WeatherIcon from './components/WeatherIcon.vue'
-import PopupComponent from './components/PopupComponent.vue'
-import TranslatorComponent from './components/TranslatorComponent.vue'
+import LoaderComponent from '@/components/LoaderComponent.vue'
+import MapComponent from '@/components/MapComponent.vue'
+import WeatherIcon from '@/components/WeatherIcon.vue'
+import PopupComponent from '@/components/PopupComponent.vue'
+import TranslatorComponent from '@/components/TranslatorComponent.vue'
+import AccountComponent from '@/components/AccountComponent.vue'
+import BookmarkButton from '@/components/BookmarkButton.vue'
 import { ref } from 'vue'
-
-const userAgent = 'vue-openstreetmap/1.0 (Contact: andykhang404@gmail.com)'
 
 const isSearching = ref(false)
 const foundLocations = ref([])
@@ -135,6 +176,7 @@ const foundPOIs = ref([])
 const weather = ref({ id: 0, night: false, description: '', temp: null })
 
 const translatorPopupVisible = ref(false)
+const loginPopupVisible = ref(false)
 
 // search input model
 const searchQuery = ref('')
@@ -142,36 +184,6 @@ const searchQuery = ref('')
 // NOTE: Provide your OpenWeather API key here (or load from env)
 // Vite: use import.meta.env and prefix env var with VITE_
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || ''
-
-// fetch request with timeout
-const fetchTimeout = async (fetchURL, fetchObj, timeout) => {
-  if (Object.hasOwn(fetchObj, 'signal')) {
-    console.warn('Fetch object has another signal! Abort fetchTimeout...')
-    return { ok: false, status: 'Object has multiple signals' }
-  }
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
-
-  const fetchOptions = {
-    ...fetchObj, // Spread existing options
-    signal: controller.signal, // Add the AbortController's signal
-  }
-
-  let response
-  try {
-    response = await fetch(fetchURL, fetchOptions)
-    return response
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      console.error('Request timed out')
-    } else {
-      console.error('Request failed', err)
-    }
-    return response
-  } finally {
-    clearTimeout(timeoutId)
-  }
-}
 
 /* NEW: fetch current weather and determine day/night */
 const fetchWeather = async (lat, lon) => {
@@ -184,7 +196,7 @@ const fetchWeather = async (lat, lon) => {
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${encodeURIComponent(
       lat,
     )}&lon=${encodeURIComponent(lon)}&appid=${OPENWEATHER_API_KEY}&units=metric`
-    const res = await fetchTimeout(url, {}, 10000)
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
     if (!res || !res.ok) {
       console.error('OpenWeather API error', res?.status)
       return
@@ -225,16 +237,12 @@ const onSearch = async () => {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       q,
     )}&format=json&addressdetails=1&limit=5`
-    const res = await fetchTimeout(
-      url,
-      {
-        headers: {
-          'User-Agent': userAgent,
-          'Accept-Language': 'en',
-        },
+    const res = await fetch(url, {
+      headers: {
+        'Accept-Language': 'en',
       },
-      10000,
-    )
+      signal: AbortSignal.timeout(10000),
+    })
     if (!res || !res.ok) {
       console.error('Nominatim error', res.status)
       return
@@ -251,6 +259,7 @@ const onSearch = async () => {
           lon: Number(first.lon),
           display_name: first.display_name,
           place_id: first.place_id,
+          type: String(first.type) || 'place',
           class: first.class,
         },
       ]
@@ -283,11 +292,13 @@ const onMapSelect = async ({ lat, lon }) => {
     const revUrl = `https://nominatim.openstreetmap.org/reverse?lat=${encodeURIComponent(
       lat,
     )}&lon=${encodeURIComponent(lon)}&format=json`
-    const revRes = await fetch(revUrl, { headers: { 'User-Agent': userAgent } })
+    const revRes = await fetch(revUrl)
     if (revRes.ok) {
       const revData = await revRes.json()
       if (revData?.display_name) {
-        foundLocations.value = [{ lat, lon, display_name: revData.display_name }]
+        foundLocations.value = [
+          { lat, lon, display_name: revData.display_name, type: revData.type },
+        ]
       }
     }
   } catch (e) {
@@ -328,17 +339,11 @@ const searchPOIs = async (latitude, longitude) => {
         out body 50;
       `
 
-  let overpassResponse = await fetchTimeout(
-    'https://overpass-api.de/api/interpreter',
-    {
-      method: 'POST',
-      body: overpassQuery,
-      headers: {
-        'User-Agent': userAgent,
-      },
-    },
-    10000,
-  )
+  let overpassResponse = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    body: overpassQuery,
+    signal: AbortSignal.timeout(10000),
+  })
   if (!overpassResponse.ok) {
     console.error('Overpass API error', overpassResponse.status)
     return

@@ -5,7 +5,7 @@
       flex-direction: column;
       align-items: center;
       border-right: 1px solid var(--border);
-      padding-right: 0.75rem;
+      padding: 0.75rem 0.75rem 0.75rem 0;
     "
   >
     <abbr :title="props.description">

@@ -128,6 +128,14 @@ textarea {
 button {
   padding: 6px 10px;
   cursor: pointer;
+  background-color: var(--primary);
+  border: none;
+  box-shadow: none;
+  color: var(--on-primary);
+  border-radius: 6px;
+}
+button:hover {
+  background-color: var(--primary-alt);
 }
 .result {
   margin-top: 8px;

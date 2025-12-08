@@ -7,9 +7,14 @@
       role="dialog"
       aria-modal="true"
     >
-      <div class="popup-panel" ref="panel" tabindex="-1">
-        <!-- header with title and close button -->
-        <header class="popup-header" v-if="title || true">
+      <div
+        class="popup-panel"
+        ref="panel"
+        tabindex="-1"
+        style="display: flex; flex-direction: column; min-height: 0"
+      >
+        <!-- header stays on top when content scrolls -->
+        <header class="popup-header" style="position: sticky; top: 0; z-index: 10">
           <h3 class="popup-title" v-if="title">{{ title }}</h3>
           <button
             class="popup-close-button"
@@ -21,7 +26,9 @@
           </button>
         </header>
 
-        <slot />
+        <div class="popup-body" style="overflow: auto; min-height: 0">
+          <slot />
+        </div>
       </div>
     </div>
   </transition>

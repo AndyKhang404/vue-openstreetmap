@@ -1,0 +1,4 @@
+*.json
+.env.local
+*.db
+__pycache__/*

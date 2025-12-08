@@ -56,6 +56,10 @@ npm run lint
 - [weather-icons](https://erikflowers.github.io/weather-icons/)
 - [iconmonstr](https://iconmonstr.com/)
 
+### Avatar
+
+- [Avatar Placeholder](https://avatar-placeholder.iran.liara.run/)
+
 ### Others
 
 - [CSS box-shadow](https://html-css-js.com/css/generator/box-shadow/)

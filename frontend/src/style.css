@@ -146,6 +146,19 @@ form > * {
   height: 3.5rem;
 }
 
+#login-toggle {
+  position: absolute;
+  left: 5rem;
+  bottom: 1rem;
+  z-index: 1000;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
 .icon-primary {
   fill: var(--on-primary);
 }
