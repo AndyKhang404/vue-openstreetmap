@@ -109,3 +109,31 @@ export const getBookmarkCount = async () => {
   const data = await response.json()
   return data.count
 }
+
+export const sendChatMessage = async (messages) => {
+  if (!auth.currentUser) {
+    throw new Error('User not authenticated')
+  }
+
+  if (!BACKEND_URL) {
+    throw new Error('Backend URL not configured')
+  }
+
+  const idToken = await auth.currentUser.getIdToken()
+
+  const response = await fetch(`${BACKEND_URL}/api/v1/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify(messages),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Chat request failed: ${response.status}`)
+  }
+
+  return await response.json()
+}

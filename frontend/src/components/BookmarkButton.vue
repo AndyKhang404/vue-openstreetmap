@@ -1,10 +1,16 @@
 <template>
   <button
     @click="handleBookmark"
-    :disabled="isLoading"
+    :disabled="disabled || isLoading"
+    :title="
+      disabled
+        ? 'Please login and verify your email to bookmark'
+        : isBookmarked
+          ? 'Remove bookmark'
+          : 'Add bookmark'
+    "
     class="bookmark-button"
     :class="{ success: showSuccess }"
-    title="Bookmark this location"
   >
     <svg
       v-if="!isLoading && !showSuccess"
@@ -39,7 +45,7 @@
 <script setup>
 import { ref } from 'vue'
 import { auth } from '../firebase'
-import { addBookmark } from '../helper'
+import { addBookmark } from '../backend'
 
 const props = defineProps({
   lat: {
@@ -56,7 +62,11 @@ const props = defineProps({
   },
   name: {
     type: String,
-    required: true,
+    default: null,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -72,15 +82,19 @@ const handleBookmark = async () => {
   isLoading.value = true
 
   try {
-    const data = await addBookmark(props.lat, props.lon, props.type, props.name)
+    await addBookmark(props.lat, props.lon, props.type, props.name)
+
+    // Invalidate bookmark cache immediately
+    try {
+      localStorage.removeItem('bookmarks_cache')
+    } catch (err) {
+      console.error('Failed to invalidate cache', err)
+    }
 
     showSuccess.value = true
     setTimeout(() => {
       showSuccess.value = false
     }, 1500)
-
-    console.log('Bookmark saved successfully')
-    console.log(data)
   } catch (error) {
     console.error('Error saving bookmark:', error)
 

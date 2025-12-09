@@ -27,9 +27,7 @@
       </button>
     </div>
     <div class="divider"></div>
-    <h3 style="padding-top: 1rem">Bookmarks</h3>
-    <p>Places you have saved</p>
-    <p>Bookmarks: {{ bookmarkCount }} / 20</p>
+    <h3 style="padding-top: 1rem">Bookmarks ({{ bookmarkCount }} / 20)</h3>
 
     <div v-if="isLoadingBookmarks" style="padding: 1rem; text-align: center">
       Loading bookmarks...
@@ -48,7 +46,15 @@
           <h4>{{ bookmark.name }}</h4>
           <span class="bookmark-type">type: {{ bookmark.type }}</span>
         </div>
-        <DeleteBookmarkButton :bookmark-id="bookmark.id" @deleted="handleDeleteBookmark" />
+        <div class="bookmark-actions">
+          <GoToButton
+            :lat="bookmark.lat"
+            :lon="bookmark.lon"
+            :name="bookmark.name"
+            @goto="handleGotoBookmark"
+          />
+          <DeleteBookmarkButton :bookmark-id="bookmark.id" @deleted="handleDeleteBookmark" />
+        </div>
       </div>
     </div>
   </div>
@@ -72,9 +78,20 @@
       >
         Create account
       </button>
+
+      <!-- Added Forgot password tab -->
+      <button
+        :class="{ active: mode === 'forgot' }"
+        @click="mode = 'forgot'"
+        type="button"
+        :aria-pressed="mode === 'forgot'"
+      >
+        Forgot password
+      </button>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="auth-form">
+    <!-- Show login/register form when not in 'forgot' -->
+    <form v-if="mode !== 'forgot'" @submit.prevent="handleSubmit" class="auth-form">
       <label>
         Email
         <input v-model="email" type="email" required autocomplete="email" />
@@ -86,7 +103,7 @@
           v-model="password"
           type="password"
           required
-          minlength="6"
+          minlength="12"
           :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
         />
       </label>
@@ -98,6 +115,28 @@
       <div class="form-actions">
         <button class="button-primary" type="submit" :disabled="isProcessing">
           {{ mode === 'login' ? 'Sign in' : 'Create account' }}
+        </button>
+        <span v-if="isProcessing" aria-live="polite">Processing…</span>
+      </div>
+    </form>
+
+    <!-- Password reset form -->
+    <form v-else @submit.prevent="handlePasswordReset" class="auth-form">
+      <label>
+        Email
+        <input v-model="forgotEmail" type="email" required autocomplete="email" />
+      </label>
+
+      <div v-if="resetError" class="error">
+        {{ resetError }}
+      </div>
+      <div v-if="resetMessage" style="color: #0a7; padding: 0.5rem; border-radius: 6px">
+        {{ resetMessage }}
+      </div>
+
+      <div class="form-actions">
+        <button class="button-primary" type="submit" :disabled="isProcessing">
+          Send password reset email
         </button>
         <span v-if="isProcessing" aria-live="polite">Processing…</span>
       </div>
@@ -122,12 +161,15 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
+  sendEmailVerification,
   onAuthStateChanged,
+  sendPasswordResetEmail,
 } from 'firebase/auth'
-import { getBookmarks } from '@/helper'
+import { getBookmarks } from '@/backend'
 import DeleteBookmarkButton from './DeleteBookmarkButton.vue'
+import GoToButton from './GoToButton.vue'
 
-const emit = defineEmits(['success'])
+const emit = defineEmits(['success', 'goto-bookmark'])
 
 const email = ref('')
 const password = ref('')
@@ -138,8 +180,50 @@ const user = ref(null)
 const bookmarkCount = ref(0)
 const bookmarks = ref([])
 const isLoadingBookmarks = ref(false)
+const forgotEmail = ref('')
+const resetMessage = ref('')
+const resetError = ref('')
 
 let unsub = null
+
+// Helper functions for localStorage caching
+const BOOKMARKS_CACHE_KEY = 'bookmarks_cache'
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+function getCachedBookmarks() {
+  try {
+    const cached = localStorage.getItem(`${BOOKMARKS_CACHE_KEY}`)
+    if (!cached) return null
+
+    const { bookmarks, timestamp } = JSON.parse(cached)
+    const isStale = Date.now() - timestamp > CACHE_DURATION
+
+    return isStale ? null : { bookmarks }
+  } catch (err) {
+    console.error('Failed to load cached bookmarks', err)
+    return null
+  }
+}
+
+function setCachedBookmarks(data) {
+  try {
+    const cacheData = {
+      bookmarks: data.bookmarks,
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(`${BOOKMARKS_CACHE_KEY}`, JSON.stringify(cacheData))
+  } catch (err) {
+    console.error('Failed to cache bookmarks', err)
+  }
+}
+
+function clearCachedBookmarks() {
+  try {
+    localStorage.removeItem(`${BOOKMARKS_CACHE_KEY}`)
+  } catch (err) {
+    console.error('Failed to clear cached bookmarks', err)
+  }
+}
 
 onMounted(() => {
   unsub = onAuthStateChanged(auth, async (u) => {
@@ -154,6 +238,15 @@ onMounted(() => {
       : null
 
     if (u) {
+      // Load cached bookmarks first
+      const cached = getCachedBookmarks()
+      if (cached) {
+        bookmarks.value = Array.isArray(cached.bookmarks) ? cached.bookmarks : []
+        bookmarkCount.value = bookmarks.value.length
+        // Don't fetch if cache is fresh
+        return
+      }
+      // Only fetch if no valid cache
       await fetchBookmarks()
     } else {
       bookmarks.value = []
@@ -173,7 +266,12 @@ async function handleSubmit() {
     if (mode.value === 'login') {
       await signInWithEmailAndPassword(auth, email.value, password.value)
     } else {
-      await createUserWithEmailAndPassword(auth, email.value, password.value)
+      const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value)
+      try {
+        await sendEmailVerification(userCredential.user)
+      } catch (err) {
+        console.warn('Failed to send verification email', err)
+      }
     }
     emit('success')
   } catch (err) {
@@ -200,6 +298,9 @@ async function handleGoogle() {
 async function handleSignOut() {
   isProcessing.value = true
   try {
+    if (auth.currentUser) {
+      clearCachedBookmarks()
+    }
     await signOut(auth)
   } catch (err) {
     console.error('Sign out failed', err)
@@ -216,6 +317,9 @@ async function fetchBookmarks() {
     const data = await getBookmarks()
     bookmarks.value = Array.isArray(data.bookmarks) ? data.bookmarks : []
     bookmarkCount.value = bookmarks.value.length
+
+    // Cache the bookmarks
+    setCachedBookmarks(data)
   } catch (err) {
     console.error('Failed to fetch bookmarks', err)
     bookmarks.value = []
@@ -232,6 +336,28 @@ async function handleDeleteBookmark() {
 
 function handleImageError(event) {
   event.target.src = '/assets/avatar-placeholder.png'
+}
+
+function handleGotoBookmark(location) {
+  emit('goto-bookmark', location)
+}
+
+async function handlePasswordReset() {
+  resetError.value = ''
+  resetMessage.value = ''
+  if (!forgotEmail.value) {
+    resetError.value = 'Please enter your email address.'
+    return
+  }
+  isProcessing.value = true
+  try {
+    await sendPasswordResetEmail(auth, forgotEmail.value)
+    resetMessage.value = 'Password reset email sent. Check your inbox.'
+  } catch (err) {
+    resetError.value = (err && err.message) || 'Failed to send password reset email.'
+  } finally {
+    isProcessing.value = false
+  }
 }
 </script>
 
@@ -394,5 +520,10 @@ function handleImageError(event) {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #e1e4e8;
+}
+
+.bookmark-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 </style>

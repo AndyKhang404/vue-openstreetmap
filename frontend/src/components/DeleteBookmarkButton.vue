@@ -24,7 +24,7 @@
 <script setup>
 import { ref } from 'vue'
 import { auth } from '../firebase'
-import { deleteBookmark } from '../helper'
+import { deleteBookmark } from '../backend'
 
 const props = defineProps({
   bookmarkId: {
@@ -51,7 +51,6 @@ const handleDelete = async () => {
 
   try {
     await deleteBookmark(props.bookmarkId)
-    console.log('Bookmark deleted successfully')
     emit('deleted')
   } catch (error) {
     console.error('Error deleting bookmark:', error)

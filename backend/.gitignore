@@ -1,4 +1,5 @@
 *.json
 .env.local
 *.db
-__pycache__/*
+__pycache__
+venv

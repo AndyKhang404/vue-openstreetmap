@@ -58,11 +58,13 @@
           <h3 class="clamp-row" style="padding-left: 1rem">
             {{ foundLocation.display_name || 'Selected location' }}
           </h3>
+          <div style="flex: 1"></div>
           <BookmarkButton
             :lat="foundLocation.lat"
             :lon="foundLocation.lon"
             :type="'place'"
             :name="foundLocation.display_name"
+            :disabled="!canUseProtectedFeatures()"
           />
         </div>
       </div>
@@ -97,6 +99,7 @@
             :lon="foundPOI.lon"
             :type="foundPOI.type"
             :name="foundPOI.name"
+            :disabled="!canUseProtectedFeatures()"
           />
         </div>
       </div>
@@ -115,6 +118,14 @@
     <TranslatorComponent />
   </PopupComponent>
 
+  <PopupComponent v-model:visible="chatbotPopupVisible" title="AI Assistant">
+    <ChatbotComponent />
+  </PopupComponent>
+
+  <PopupComponent v-model:visible="chatbotPopupVisible" title="AI Assistant">
+    <ChatbotComponent />
+  </PopupComponent>
+
   <button
     id="translator-toggle"
     class="button-shadow"
@@ -131,6 +142,35 @@
     >
       <path
         d="M8.722 5.843l.125-.562-1.02-.199-.101.464c-.345-.05-.712-.057-1.083-.019.009-.249.023-.494.045-.728h1.141v-.966h-1.004c.049-.246.092-.394.134-.533l-.997-.3c-.072.245-.134.484-.195.833h-1.138v.966h1.014c-.027.312-.043.637-.048.964-1.119.411-1.595 1.195-1.595 1.905 0 .84.663 1.578 1.709 1.482 1.301-.118 2.169-1.1 2.679-2.308.525.303.746.814.548 1.286-.185.436-.725.852-1.757.831v1.041c1.146.018 2.272-.417 2.715-1.469.431-1.028-.062-2.151-1.172-2.688zm-1.342.71c-.162.36-.375.717-.648.998-.041-.3-.07-.628-.086-.978.249-.032.499-.038.734-.02zm-1.758.336c.028.44.078.844.148 1.205-.927.169-.963-.744-.148-1.205zm2.378 6.111c0-.342.035-.677.102-1h-5.102c-.552 0-1-.449-1-1v-8c0-.551.448-1 1-1h8c.552 0 1 .449 1 1v5.101c.323-.066.657-.101 1-.101h1v-5c0-1.657-1.343-3-3-3h-8c-1.656 0-3 1.343-3 3v8c0 1.657 1.344 3 3 3h5v-1zm13-3h-8c-1.657 0-3 1.343-3 3v8c0 1.657 1.343 3 3 3h8c1.657 0 3-1.343 3-3v-8c0-1.657-1.343-3-3-3zm-1.865 11l-.66-1.846h-3l-.663 1.846h-1.66l3.041-8h1.602l3.053 8h-1.713zm-2.153-6.137l1.051 3.018h-2.103l1.052-3.018z"
+      />
+    </svg>
+  </button>
+
+  <button
+    id="chatbot-toggle"
+    class="button-shadow"
+    @click="canUseProtectedFeatures() && (chatbotPopupVisible = true)"
+    :title="
+      canUseProtectedFeatures()
+        ? 'Open AI Assistant'
+        : 'Please login and verify your email to use AI Assistant'
+    "
+    aria-label="Open AI Assistant"
+    :disabled="!canUseProtectedFeatures()"
+    :style="{
+      opacity: canUseProtectedFeatures() ? 1 : 0.5,
+      cursor: canUseProtectedFeatures() ? 'pointer' : 'not-allowed',
+    }"
+  >
+    <svg
+      class="icon-primary"
+      xmlns="http://www.w3.org/2000/svg"
+      width="2rem"
+      height="2rem"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
       />
     </svg>
   </button>
@@ -156,7 +196,7 @@
   </button>
 
   <PopupComponent v-model:visible="loginPopupVisible" title="Account">
-    <AccountComponent @success="loginPopupVisible = false" />
+    <AccountComponent @success="loginPopupVisible = false" @goto-bookmark="handleGotoBookmark" />
   </PopupComponent>
 </template>
 
@@ -168,7 +208,9 @@ import PopupComponent from '@/components/PopupComponent.vue'
 import TranslatorComponent from '@/components/TranslatorComponent.vue'
 import AccountComponent from '@/components/AccountComponent.vue'
 import BookmarkButton from '@/components/BookmarkButton.vue'
-import { ref } from 'vue'
+import ChatbotComponent from '@/components/ChatbotComponent.vue'
+import { ref, onMounted } from 'vue'
+import { auth } from './firebase'
 
 const isSearching = ref(false)
 const foundLocations = ref([])
@@ -177,6 +219,20 @@ const weather = ref({ id: 0, night: false, description: '', temp: null })
 
 const translatorPopupVisible = ref(false)
 const loginPopupVisible = ref(false)
+const chatbotPopupVisible = ref(false)
+const isAuthenticated = ref(false)
+const isEmailVerified = ref(false)
+
+// Check authentication state
+onMounted(() => {
+  auth.onAuthStateChanged((user) => {
+    isAuthenticated.value = !!user
+    isEmailVerified.value = user?.emailVerified || false
+  })
+})
+
+// Computed flag for whether user can use protected features
+const canUseProtectedFeatures = () => isAuthenticated.value && isEmailVerified.value
 
 // search input model
 const searchQuery = ref('')
@@ -240,6 +296,7 @@ const onSearch = async () => {
     const res = await fetch(url, {
       headers: {
         'Accept-Language': 'en',
+        skip_zrok_interstitial: 'true',
       },
       signal: AbortSignal.timeout(10000),
     })
@@ -303,7 +360,7 @@ const onMapSelect = async ({ lat, lon }) => {
     }
   } catch (e) {
     // ignore reverse-geocode errors, keep placeholder display_name
-    console.log('Cannot reverse-geocode location', e)
+    console.warn('Cannot reverse-geocode location', e)
   }
 
   await fetchWeather(lat, lon)
@@ -375,6 +432,15 @@ const searchPOIs = async (latitude, longitude) => {
     .slice(0, 5)
 
   foundPOIs.value = poisWithDistance
+}
+
+// handle the goto-bookmark event and trigger a map selection.
+const handleGotoBookmark = async (location) => {
+  // Close the account popup
+  loginPopupVisible.value = false
+
+  // Navigate to the bookmarked location
+  await onMapSelect({ lat: location.lat, lon: location.lon })
 }
 </script>
 
